@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -38,10 +39,45 @@ public class ProductController {
 
         return modelAndView;
     }
+
+    @PostMapping("/items")
+    public ModelAndView updateCountProductInList(
+        @RequestParam(value = "id", required = true) Long id,
+        @RequestParam(value = "action", required = true) String action,
+        @RequestParam(value = "search", required = false, defaultValue = "") String search,
+        @RequestParam(value = "sort", required = false, defaultValue = "NO") String sort,
+        @RequestParam(value = "pageNumber", required = false, defaultValue = "1") int pageNumber,
+        @RequestParam(value = "pageSize", required = false, defaultValue = "10") int pageSize
+    ){
+
+        productService.updateProductInCart(id, action);
+
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.setViewName("redirect:/items?search=" + search + "&sort="+sort+"&pageNumber="+pageNumber+"&pageSize="+pageSize );
+        return modelAndView;
+    }
     
     @GetMapping("/items/{id}")
     public ModelAndView getProductDetail(@PathVariable Long id){
         ModelAndView modelAndView = new ModelAndView("item");
+
+        ProductEntity item = productService.findById(id);
+
+        modelAndView.addObject("item", item);
+
+        return modelAndView;
+    }
+
+    @PostMapping("/items/{id}")
+    public ModelAndView updateCountProductInDetailt(
+        @PathVariable(value = "id", required = true) Long id,
+        @RequestParam(value = "action", required = true) String action
+    ){
+        productService.updateProductInCart(id, action);
+
+        ModelAndView modelAndView = new ModelAndView(
+        "item"
+        );
 
         ProductEntity item = productService.findById(id);
 

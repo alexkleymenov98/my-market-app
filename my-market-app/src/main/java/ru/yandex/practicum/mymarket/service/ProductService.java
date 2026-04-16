@@ -24,7 +24,7 @@ public class ProductService {
     }
 
     public List<ProductEntity> getProductFromCart(){
-        return productRepository.findByCountGreaterThan(1);
+        return productRepository.findByCountGreaterThan(0);
     }
 
     public Page<ProductEntity> findAll(int pageNumber, int pageSize, String sort, String search){
@@ -52,5 +52,19 @@ public class ProductService {
         }
 
         return productRepository.findAll(pageable);
+    }
+
+    public void updateProductInCart(Long id, String action){
+        if("PLUS".equals(action)){
+            productRepository.incrementCount(id);
+        }
+
+        if("MINUS".equals(action)){
+            productRepository.decrementCount(id);
+        }
+
+        if("DELETE".equals(action)){
+            productRepository.setCountZero(id);
+        }
     }
 }
