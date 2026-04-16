@@ -2,7 +2,6 @@ package ru.yandex.practicum.mymarket.controller;
 
 import java.util.List;
 
-import org.aspectj.weaver.ast.Or;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,8 +10,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 import ru.yandex.practicum.mymarket.entity.OrderEntity;
-import ru.yandex.practicum.mymarket.model.OrderDto;
-import ru.yandex.practicum.mymarket.model.ProductDto;
 import ru.yandex.practicum.mymarket.service.OrderService;
 
 @Controller

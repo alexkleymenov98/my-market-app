@@ -1,6 +1,7 @@
 package ru.yandex.practicum.mymarket.service;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,7 +20,7 @@ public class ProductService {
         this.productRepository = productRepository;
     }
 
-    public ProductEntity findById(Long id){
+    public Optional<ProductEntity> findById(Long id){
         return productRepository.findById(id);
     }
 

@@ -9,6 +9,11 @@
 </head>
 
 <body class="bg-light">
+    <div class="alert alert-success alert-dismissible fade show" role="alert" th:if="${importSuccess}">
+        Поздравляем! Товары успешно загружены! &#128578;
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
     <form id="main">
     </form>
     <div class="container p-2">
@@ -18,6 +23,14 @@
                     <h2>
                         <span class="badge text-bg-success">Витрина магазина</span>
                     </h2>
+
+<!-- Замените на это: -->
+<form action="/upload" method="post" enctype="multipart/form-data" class="d-inline">
+    <input type="file" name="file" accept=".xlsx" id="file" style="display: none;" onchange="this.form.submit()">
+    <label for="file" class="btn btn-secondary ms-auto bi bi-file-earmark-text">
+        Загрузить xlsx
+    </label>
+</form>
                     <a href="/orders" class="btn btn-secondary ms-auto bi bi-file-earmark-text"> Заказы</a>
                     <a href="/cart/items" class="btn btn-secondary bi bi-cart4"> Корзина</a>
                 </div>
