@@ -5,77 +5,85 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.5</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <version>3.4.4</version>  <!-- ИСПРАВЛЕНО: было 4.0.5 -->
+        <relativePath/>
 	</parent>
+	
 	<groupId>ru.yandex.practicum</groupId>
 	<artifactId>my-market-app</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>my-market-app</name>
 	<description>My Market Application</description>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
+	
 	<properties>
 		<java.version>21</java.version>
+		<testcontainers.version>1.19.3</testcontainers.version>  <!-- ДОБАВЛЕНО -->
 	</properties>
+	
 	<dependencies>
+		<!-- JPA -->
 		<dependency>
       		<groupId>org.springframework.boot</groupId>
       		<artifactId>spring-boot-starter-data-jpa</artifactId>
     	</dependency>
-    	<!-- <dependency>
-      		<groupId>org.springframework.boot</groupId>
-      		<artifactId>spring-boot-starter-liquibase</artifactId>
-    	</dependency> -->
+    	
+		<!-- Excel -->
 		<dependency>
     		<groupId>org.apache.poi</groupId>
     		<artifactId>poi-ooxml</artifactId>
     		<version>5.2.5</version>
 		</dependency>
+		
+		<!-- Thymeleaf -->
     	<dependency>
       		<groupId>org.springframework.boot</groupId>
       		<artifactId>spring-boot-starter-thymeleaf</artifactId>
     	</dependency>
+    	
+		<!-- Web (ИСПРАВЛЕНО: webmvc -> web) -->
     	<dependency>
       		<groupId>org.springframework.boot</groupId>
-      		<artifactId>spring-boot-starter-webmvc</artifactId>
+      		<artifactId>spring-boot-starter-web</artifactId>
     	</dependency>
+    	
+		<!-- PostgreSQL -->
     	<dependency>
       		<groupId>org.postgresql</groupId>
       		<artifactId>postgresql</artifactId>
       		<scope>runtime</scope>
     	</dependency>
+    	
+		<!-- ===== ТЕСТОВЫЕ ЗАВИСИМОСТИ ===== -->
+		
+		<!-- Основной тестовый стартер Spring Boot -->
     	<dependency>
       		<groupId>org.springframework.boot</groupId>
-      		<artifactId>spring-boot-starter-data-jpa-test</artifactId>
-      		<scope>test</scope>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
     	</dependency>
-    	<dependency>
-      		<groupId>org.springframework.boot</groupId>
-      		<artifactId>spring-boot-starter-liquibase-test</artifactId>
-      		<scope>test</scope>
-    	</dependency>
-    	<dependency>
-      		<groupId>org.springframework.boot</groupId>
-      		<artifactId>spring-boot-starter-thymeleaf-test</artifactId>
-      		<scope>test</scope>
-    	</dependency>
-    	<dependency>
-      		<groupId>org.springframework.boot</groupId>
-      		<artifactId>spring-boot-starter-webmvc-test</artifactId>
-      		<scope>test</scope>
-    	</dependency>
+		
+		<!-- Testcontainers -->
+		<dependency>
+    		<groupId>org.testcontainers</groupId>
+    		<artifactId>testcontainers</artifactId>
+    		<version>${testcontainers.version}</version>  <!-- ДОБАВЛЕНА ВЕРСИЯ -->
+    		<scope>test</scope>
+		</dependency>
+		
+		<dependency>
+    		<groupId>org.testcontainers</groupId>
+    		<artifactId>postgresql</artifactId>
+			<version>${testcontainers.version}</version>
+    		<scope>test</scope>
+		</dependency>
+		
+		<!-- Обязательно для JUnit 5 -->
+		<dependency>
+    		<groupId>org.testcontainers</groupId>
+    		<artifactId>junit-jupiter</artifactId>
+			<version>${testcontainers.version}</version>
+    		<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
