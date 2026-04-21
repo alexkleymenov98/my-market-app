@@ -73,7 +73,7 @@ public class ProductController {
 
         Optional<ProductEntity> item = productService.findById(id);
 
-        modelAndView.addObject("item", item);
+        modelAndView.addObject("item", item.get());
 
         return modelAndView;
     }

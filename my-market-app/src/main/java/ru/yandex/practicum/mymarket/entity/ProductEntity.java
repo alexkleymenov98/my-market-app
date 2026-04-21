@@ -1,5 +1,6 @@
 package ru.yandex.practicum.mymarket.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -14,6 +15,7 @@ public class ProductEntity {
     private Long id;
     private String title;
     private String description;
+    @Column(name = "img_path")
     private String imgPath;
     private Long price;
     private int count;
