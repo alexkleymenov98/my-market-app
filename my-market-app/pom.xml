@@ -40,7 +40,6 @@
       		<artifactId>spring-boot-starter-thymeleaf</artifactId>
     	</dependency>
     	
-		<!-- Web (ИСПРАВЛЕНО: webmvc -> web) -->
     	<dependency>
       		<groupId>org.springframework.boot</groupId>
       		<artifactId>spring-boot-starter-web</artifactId>
@@ -52,6 +51,12 @@
       		<artifactId>postgresql</artifactId>
       		<scope>runtime</scope>
     	</dependency>
+
+		<dependency>
+    		<groupId>org.liquibase</groupId>
+    		<artifactId>liquibase-core</artifactId>
+    		<version>4.25.1</version>
+		</dependency>
     	
 		<!-- ===== ТЕСТОВЫЕ ЗАВИСИМОСТИ ===== -->
 		
