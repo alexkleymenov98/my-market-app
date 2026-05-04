@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.4.4</version>  <!-- ИСПРАВЛЕНО: было 4.0.5 -->
+        <relativePath/>
+	</parent>
+	
+	<groupId>ru.yandex.practicum</groupId>
+	<artifactId>my-market-app</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>my-market-app</name>
+	<description>My Market Application</description>
+	
+	<properties>
+		<java.version>21</java.version>
+		<testcontainers.version>1.19.3</testcontainers.version>  <!-- ДОБАВЛЕНО -->
+	</properties>
+	
+	<dependencies>
+		<!-- JPA -->
+		<dependency>
+      		<groupId>org.springframework.boot</groupId>
+      		<artifactId>spring-boot-starter-data-jpa</artifactId>
+    	</dependency>
+    	
+		<!-- Excel -->
+		<dependency>
+    		<groupId>org.apache.poi</groupId>
+    		<artifactId>poi-ooxml</artifactId>
+    		<version>5.2.5</version>
+		</dependency>
+		
+		<!-- Thymeleaf -->
+    	<dependency>
+      		<groupId>org.springframework.boot</groupId>
+      		<artifactId>spring-boot-starter-thymeleaf</artifactId>
+    	</dependency>
+    	
+    	<dependency>
+      		<groupId>org.springframework.boot</groupId>
+      		<artifactId>spring-boot-starter-web</artifactId>
+    	</dependency>
+    	
+		<!-- PostgreSQL -->
+    	<dependency>
+      		<groupId>org.postgresql</groupId>
+      		<artifactId>postgresql</artifactId>
+      		<scope>runtime</scope>
+    	</dependency>
+
+		<dependency>
+    		<groupId>org.liquibase</groupId>
+    		<artifactId>liquibase-core</artifactId>
+    		<version>4.25.1</version>
+		</dependency>
+    	
+		<!-- ===== ТЕСТОВЫЕ ЗАВИСИМОСТИ ===== -->
+		
+		<!-- Основной тестовый стартер Spring Boot -->
+    	<dependency>
+      		<groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+    	</dependency>
+		
+		<!-- Testcontainers -->
+		<dependency>
+    		<groupId>org.testcontainers</groupId>
+    		<artifactId>testcontainers</artifactId>
+    		<version>${testcontainers.version}</version>  <!-- ДОБАВЛЕНА ВЕРСИЯ -->
+    		<scope>test</scope>
+		</dependency>
+		
+		<dependency>
+    		<groupId>org.testcontainers</groupId>
+    		<artifactId>postgresql</artifactId>
+			<version>${testcontainers.version}</version>
+    		<scope>test</scope>
+		</dependency>
+		
+		<!-- Обязательно для JUnit 5 -->
+		<dependency>
+    		<groupId>org.testcontainers</groupId>
+    		<artifactId>junit-jupiter</artifactId>
+			<version>${testcontainers.version}</version>
+    		<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+        		<groupId>org.springframework.boot</groupId>
+        		<artifactId>spring-boot-maven-plugin</artifactId>
+      		</plugin>
+		</plugins>
+	</build>
+</project>
