@@ -9,6 +9,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import ru.yandex.practicum.mymarket.entity.ProductEntity;
 import ru.yandex.practicum.mymarket.repository.ProductRepository;
 
@@ -20,52 +22,54 @@ public class ProductService {
         this.productRepository = productRepository;
     }
 
-    public Optional<ProductEntity> findById(Long id){
+    public Mono<ProductEntity> findById(Long id){
         return productRepository.findById(id);
     }
 
-    public List<ProductEntity> getProductFromCart(){
+    public Flux<ProductEntity> getProductFromCart(){
         return productRepository.findByCountGreaterThan(0);
     }
 
-    public Page<ProductEntity> findAll(int pageNumber, int pageSize, String sort, String search){
-        Pageable pageable;
+    // public Mono<Page<ProductEntity>> findAll(int pageNumber, int pageSize, String sort, String search){
+    //     Pageable pageable;
 
-        int pageNumerIndex = Math.max(0, pageNumber - 1);
+    //     int pageNumerIndex = Math.max(0, pageNumber - 1);
 
-        if(sort.equals("ALPHA") || sort.equals("PRICE")){
-            Sort sortObj;
+    //     if(sort.equals("ALPHA") || sort.equals("PRICE")){
+    //         Sort sortObj;
 
-            if("ALPHA".equals(sort)){
-                sortObj = Sort.by(Sort.Direction.DESC, "title" );
-            } else {
-                sortObj = Sort.by(Sort.Direction.DESC, "price" );
-            }
+    //         if("ALPHA".equals(sort)){
+    //             sortObj = Sort.by(Sort.Direction.DESC, "title" );
+    //         } else {
+    //             sortObj = Sort.by(Sort.Direction.DESC, "price" );
+    //         }
 
-            pageable = PageRequest.of(pageNumerIndex, pageSize, sortObj);
-        } else {
-            pageable = PageRequest.of(pageNumerIndex, pageSize);
-        }
+    //         pageable = PageRequest.of(pageNumerIndex, pageSize, sortObj);
+    //     } else {
+    //         pageable = PageRequest.of(pageNumerIndex, pageSize);
+    //     }
 
-        if (search != null && !search.trim().isEmpty()) {
-            String searchTerm = search.trim();
-            return productRepository.findByTitleContainingIgnoreCase(searchTerm, pageable);
-        }
+    //     if (search != null && !search.trim().isEmpty()) {
+    //         String searchTerm = search.trim();
+    //         return productRepository.findByTitleContainingIgnoreCase(searchTerm, pageable);
+    //     }
 
-        return productRepository.findAll(pageable);
-    }
+    //     return productRepository.count().zipWith(productRepository.findAll(pageable));
+    // }
 
-    public void updateProductInCart(Long id, String action){
+    public Mono<Void> updateProductInCart(Long id, String action){
         if("PLUS".equals(action)){
-            productRepository.incrementCount(id);
+            return productRepository.incrementCount(id);
         }
 
         if("MINUS".equals(action)){
-            productRepository.decrementCount(id);
+            return productRepository.decrementCount(id);
         }
 
         if("DELETE".equals(action)){
-            productRepository.setCountZero(id);
+            return productRepository.setCountZero(id);
         }
+
+        return Mono.empty();
     }
 }

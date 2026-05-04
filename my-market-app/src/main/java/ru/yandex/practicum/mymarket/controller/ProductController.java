@@ -9,8 +9,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.reactive.result.view.Rendering;
+import org.springframework.web.server.ServerWebExchange;
 
+import reactor.core.publisher.Mono;
 import ru.yandex.practicum.mymarket.entity.ProductEntity;
 import ru.yandex.practicum.mymarket.service.ProductImportService;
 import ru.yandex.practicum.mymarket.service.ProductService;
@@ -27,90 +29,91 @@ public class ProductController {
         this.productImportService = productImportService;
     }
 
-    @GetMapping(value = {"/items", "/"})
-    public ModelAndView getProducts(
-        @RequestParam(value = "search", required = false, defaultValue = "") String search,
-        @RequestParam(value = "sort", required = false, defaultValue = "NO") String sort,
-        @RequestParam(value = "pageNumber", required = false, defaultValue = "1") int pageNumber,
-        @RequestParam(value = "pageSize", required = false, defaultValue = "10") int pageSize,
-        @RequestParam(value = "importSuccess", required = false, defaultValue = "false") boolean importSuccess
-    )
-        {
+    // @GetMapping(value = {"/items", "/"})
+    // public ModelAndView getProducts(
+    //     @RequestParam(value = "search", required = false, defaultValue = "") String search,
+    //     @RequestParam(value = "sort", required = false, defaultValue = "NO") String sort,
+    //     @RequestParam(value = "pageNumber", required = false, defaultValue = "1") int pageNumber,
+    //     @RequestParam(value = "pageSize", required = false, defaultValue = "10") int pageSize,
+    //     @RequestParam(value = "importSuccess", required = false, defaultValue = "false") boolean importSuccess
+    // )
+    //     {
 
-        ModelAndView modelAndView = new ModelAndView("items");
+    //     ModelAndView modelAndView = new ModelAndView("items");
 
-        Page<ProductEntity> page = productService.findAll(pageNumber, pageSize, sort, search);
+    //     Page<ProductEntity> page = productService.findAll(pageNumber, pageSize, sort, search);
 
-        modelAndView.addObject("items", ProductUtils.mapToRowProducts(page.getContent(), 3));
-        modelAndView.addObject("paging", page);
-        modelAndView.addObject("sort", sort);
-        modelAndView.addObject("search", search);
-        modelAndView.addObject("importSuccess", importSuccess);
+    //     modelAndView.addObject("items", ProductUtils.mapToRowProducts(page.getContent(), 3));
+    //     modelAndView.addObject("paging", page);
+    //     modelAndView.addObject("sort", sort);
+    //     modelAndView.addObject("search", search);
+    //     modelAndView.addObject("importSuccess", importSuccess);
 
-        return modelAndView;
-    }
+    //     return modelAndView;
+    // }
 
-    @PostMapping("/items")
-    public ModelAndView updateCountProductInList(
-        @RequestParam(value = "id", required = true) Long id,
-        @RequestParam(value = "action", required = true) String action,
-        @RequestParam(value = "search", required = false, defaultValue = "") String search,
-        @RequestParam(value = "sort", required = false, defaultValue = "NO") String sort,
-        @RequestParam(value = "pageNumber", required = false, defaultValue = "1") int pageNumber,
-        @RequestParam(value = "pageSize", required = false, defaultValue = "10") int pageSize
-    ){
+    // @PostMapping("/items")
+    // public ModelAndView updateCountProductInList(
+    //     @RequestParam(value = "id", required = true) Long id,
+    //     @RequestParam(value = "action", required = true) String action,
+    //     @RequestParam(value = "search", required = false, defaultValue = "") String search,
+    //     @RequestParam(value = "sort", required = false, defaultValue = "NO") String sort,
+    //     @RequestParam(value = "pageNumber", required = false, defaultValue = "1") int pageNumber,
+    //     @RequestParam(value = "pageSize", required = false, defaultValue = "10") int pageSize
+    // ){
 
-        productService.updateProductInCart(id, action);
+    //     productService.updateProductInCart(id, action);
 
-        ModelAndView modelAndView = new ModelAndView();
-        modelAndView.setViewName("redirect:/items?search=" + search + "&sort="+sort+"&pageNumber="+pageNumber+"&pageSize="+pageSize );
-        return modelAndView;
-    }
-    
+    //     ModelAndView modelAndView = new ModelAndView();
+    //     modelAndView.setViewName("redirect:/items?search=" + search + "&sort="+sort+"&pageNumber="+pageNumber+"&pageSize="+pageSize );
+    //     return modelAndView;
+    // }
+
     @GetMapping("/items/{id}")
-    public ModelAndView getProductDetail(@PathVariable Long id){
-        ModelAndView modelAndView = new ModelAndView("item");
+    public Mono<Rendering> getProductDetail(@PathVariable Long id){
+        Mono<ProductEntity> item = productService.findById(id);
 
-        Optional<ProductEntity> item = productService.findById(id);
-
-        modelAndView.addObject("item", item.get());
-
-        return modelAndView;
+        return Mono.just(Rendering.view("item")
+                .modelAttribute("item", item)
+                .build());
     }
 
     @PostMapping("/items/{id}")
-    public ModelAndView updateCountProductInDetailt(
+    public Mono<Rendering> updateCountProductInDetailt(
         @PathVariable(value = "id", required = true) Long id,
-        @RequestParam(value = "action", required = true) String action
+        ServerWebExchange exchange
     ){
-        productService.updateProductInCart(id, action);
 
-        ModelAndView modelAndView = new ModelAndView(
-        "item"
-        );
+   
+        return exchange.getFormData()
+            .map(formData ->{
+                String action = formData.getFirst("action");
 
-        Optional<ProductEntity> item = productService.findById(id);
-
-        modelAndView.addObject("item", item);
-
-        return modelAndView;
+                return action;
+            })
+            .flatMap(action ->productService
+            .updateProductInCart(id, action))
+            .then(productService.findById(id).map(item -> 
+                Rendering.view("item")
+                .modelAttribute("item", item)
+                .build()));
     }
 
-    @PostMapping("/upload")
-    public ModelAndView uploadProducts(@RequestParam("file") MultipartFile file){
+    // @PostMapping("/upload")
+    // public ModelAndView uploadProducts(@RequestParam("file") MultipartFile file){
 
 
-        Boolean importSuccess = false;
+    //     Boolean importSuccess = false;
 
-        try {
-            productImportService.uploadProductsFromXlsx(file);
-            importSuccess = true;
-        } catch(Exception e){
-            importSuccess = false;
-         }
+    //     try {
+    //         productImportService.uploadProductsFromXlsx(file);
+    //         importSuccess = true;
+    //     } catch(Exception e){
+    //         importSuccess = false;
+    //      }
 
-        ModelAndView modelAndView = new ModelAndView();
-        modelAndView.setViewName("redirect:/items?importSuccess=" + importSuccess);
-        return modelAndView;
-    }
+    //     ModelAndView modelAndView = new ModelAndView();
+    //     modelAndView.setViewName("redirect:/items?importSuccess=" + importSuccess);
+    //     return modelAndView;
+    // }
 }

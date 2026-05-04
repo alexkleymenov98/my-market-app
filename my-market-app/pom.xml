@@ -21,11 +21,21 @@
 	</properties>
 	
 	<dependencies>
-		<!-- JPA -->
 		<dependency>
-      		<groupId>org.springframework.boot</groupId>
-      		<artifactId>spring-boot-starter-data-jpa</artifactId>
-    	</dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-r2dbc</artifactId>
+        </dependency>
+        
+        <!-- PostgreSQL R2DBC драйвер -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>r2dbc-postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
     	
 		<!-- Excel -->
 		<dependency>
@@ -42,14 +52,7 @@
     	
     	<dependency>
       		<groupId>org.springframework.boot</groupId>
-      		<artifactId>spring-boot-starter-web</artifactId>
-    	</dependency>
-    	
-		<!-- PostgreSQL -->
-    	<dependency>
-      		<groupId>org.postgresql</groupId>
-      		<artifactId>postgresql</artifactId>
-      		<scope>runtime</scope>
+      		<artifactId>spring-boot-starter-webflux</artifactId>
     	</dependency>
 
 		<dependency>
