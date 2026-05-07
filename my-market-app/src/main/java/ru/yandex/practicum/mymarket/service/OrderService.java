@@ -1,7 +1,6 @@
 package ru.yandex.practicum.mymarket.service;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -17,7 +16,6 @@ import ru.yandex.practicum.mymarket.entity.ProductEntity;
 import ru.yandex.practicum.mymarket.repository.OrderProductRepository;
 import ru.yandex.practicum.mymarket.repository.OrderRepository;
 import ru.yandex.practicum.mymarket.repository.ProductRepository;
-import ru.yandex.practicum.mymarket.utils.ProductUtils;
 
 @Service
 public class OrderService {

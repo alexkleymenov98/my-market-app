@@ -1,12 +1,9 @@
 package ru.yandex.practicum.mymarket.repository;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.r2dbc.repository.Modifying;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.data.repository.query.Param;
-import org.springframework.data.repository.reactive.ReactiveSortingRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,10 +15,6 @@ import ru.yandex.practicum.mymarket.entity.ProductEntity;
 public interface ProductRepository extends R2dbcRepository<ProductEntity, Long>{
     Mono<ProductEntity> findById(Long id);
     Flux<ProductEntity> findByCountGreaterThan(int count);
-    // Mono<Page<ProductEntity>> findByTitleContainingIgnoreCase(String title, Pageable pageable);
-
-     // R2dbcRepository поддерживает findAll(Pageable pageable)
-    // Flux<ProductEntity> findAll(Pageable pageable);
 
     @Modifying
     @Transactional
