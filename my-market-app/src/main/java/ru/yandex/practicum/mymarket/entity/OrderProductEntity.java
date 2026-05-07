@@ -14,7 +14,6 @@ public class OrderProductEntity {
     
     private Long productId;
 
-
     public Long getOrderId() {
         return orderId;
     }
@@ -22,19 +21,6 @@ public class OrderProductEntity {
     public void setOrderId(Long orderId) {
         this.orderId = orderId;
     }
-
-    // public ProductEntity getProduct() {
-    //     ProductEntity item = new ProductEntity();
-    //     item.setId(id);
-    //     item.setTitle(product.getTitle());
-    //     item.setDescription(product.getDescription());
-    //     item.setImgPath(product.getImgPath());
-    //     item.setPrice(product.getPrice());
-
-    //     item.setCount(getCount());
-
-    //     return item;
-    // }
 
     public void setProductId(Long productId) {
         this.productId = productId;

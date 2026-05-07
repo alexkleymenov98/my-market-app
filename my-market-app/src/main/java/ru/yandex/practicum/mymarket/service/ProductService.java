@@ -54,7 +54,7 @@ public class ProductService {
     //         return productRepository.findByTitleContainingIgnoreCase(searchTerm, pageable);
     //     }
 
-    //     return productRepository.count().zipWith(productRepository.findAll(pageable));
+    //     return productRepository.findAll(pageable);
     // }
 
     public Mono<Void> updateProductInCart(Long id, String action){

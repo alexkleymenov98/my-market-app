@@ -1,5 +1,7 @@
 package ru.yandex.practicum.mymarket.controller;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -50,6 +52,51 @@ public class ProductController {
     //     modelAndView.addObject("importSuccess", importSuccess);
 
     //     return modelAndView;
+    // }
+
+    //  @GetMapping(value = {"/items", "/"})
+    // public Mono<Rendering> getProducts(
+    //     ServerWebExchange exchange
+    // )
+    //     {
+    //         return exchange.getFormData()
+    //         .map(formData ->{
+    //             Map<String, Object> result = new HashMap<>();
+    //             String search = Optional.ofNullable(formData.getFirst("search"))
+    //                 .map(Object::toString)
+    //                 .orElse("");;
+
+    //             String sort = Optional.ofNullable(formData.getFirst("sort"))
+    //                 .map(Object::toString)
+    //                 .orElse("NO");;
+
+    //             int pageNumber = Optional.ofNullable(formData.getFirst("pageNumber"))
+    //                 .map(Object::toString)
+    //                 .map(Integer::parseInt)
+    //                 .orElse(1);
+                
+    //             int pageSize = Optional.ofNullable(formData.getFirst("pageSize"))
+    //                 .map(Object::toString)
+    //                 .map(Integer::parseInt)
+    //                 .orElse(1);
+                
+    //             boolean importSuccess = Optional.ofNullable(formData.getFirst("importSuccess"))
+    //                 .map(Object::toString)
+    //                 .map(Boolean::parseBoolean)
+    //                 .orElse(false);
+
+    //                 result.put("search", search);
+    //                 result.put("sort", exchange);
+    //                 result.put("pageNumber", pageNumber);
+    //                 result.put("pageSize", pageSize);
+    //                 result.put("importSucess", importSuccess);
+
+    //             return result;
+    //         })
+    //         .map(formData -> {
+                
+    //         })
+
     // }
 
     // @PostMapping("/items")
