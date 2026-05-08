@@ -16,6 +16,19 @@ public class ProductEntity {
     private Long price;
     private int count;
 
+    public ProductEntity(){
+        
+    }
+
+    public ProductEntity(Long id, String title, String description, String imgPath, Long price, int count){
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.imgPath = imgPath;
+        this.price = price;
+        this.count = count;
+    }
+
 
     public Long getId() {
         return id;
