@@ -2,33 +2,43 @@ package ru.yandex.practicum.mymarket.controller;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.reactive.server.WebTestClient;
 
-import ru.yandex.practicum.mymarket.AbstractTestContainersTest;
+import reactor.core.publisher.Flux;
+import ru.yandex.practicum.mymarket.entity.ProductEntity;
+import ru.yandex.practicum.mymarket.service.ProductService;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+import static org.mockito.Mockito.when;
 
-@SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.MOCK
-)
-@AutoConfigureMockMvc
-public class CartControllerTest extends AbstractTestContainersTest {
-     @Autowired
-    MockMvc mockMvc;
+@WebFluxTest(CartController.class)
+public class CartControllerTest {
+    @Autowired
+    private WebTestClient webTestClient;
+
+    @MockitoBean 
+    private ProductService productService;
     
+        
      @Test
-    void testGetProduct() throws Exception {
-        mockMvc.perform(get("/cart/items"))
-           .andExpect(status().isOk())
-           .andExpect(content().contentType("text/html;charset=UTF-8"))
-           .andExpect(view().name("cart")) 
-           .andExpect(model().attributeExists("items"))
-           .andExpect(model().attributeExists("total")); 
+    void getСart_returns200() {
+        ProductEntity mockProduct = new ProductEntity(1L, "apple", "Новый телефон", "/assets/image.png", 19999L, 12);
+        
+
+        when(productService.getProductFromCart()).thenReturn(Flux.just(mockProduct));
+
+        webTestClient.get()
+                .uri("/cart/items")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                 .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class)
+                .value(html -> {
+                    assert html.contains("apple");
+                    assert html.contains("Новый телефон");
+                });;
     }
 }

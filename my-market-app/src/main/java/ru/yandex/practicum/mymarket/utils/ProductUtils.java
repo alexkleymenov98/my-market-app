@@ -8,8 +8,8 @@ import ru.yandex.practicum.mymarket.entity.ProductEntity;
 public class ProductUtils {
     public static Long getProductsTotal(List<ProductEntity> products){
         return products.stream()
-        .map(ProductEntity::getPrice)
-        .reduce(0L, Long::sum);
+         .map(ProductEntity::getPrice)
+         .reduce(0L, Long::sum);
     }
 
     public static List<List<ProductEntity>> mapToRowProducts(List<ProductEntity> products, int countOneRow){

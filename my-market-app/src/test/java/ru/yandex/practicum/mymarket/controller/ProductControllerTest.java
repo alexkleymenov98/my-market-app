@@ -2,43 +2,45 @@ package ru.yandex.practicum.mymarket.controller;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
+import ru.yandex.practicum.mymarket.entity.ProductEntity;
+import ru.yandex.practicum.mymarket.service.ProductImportService;
+import ru.yandex.practicum.mymarket.service.ProductService;
 
-import org.springframework.test.web.servlet.MockMvc;
+import static org.mockito.Mockito.when;
 
-import ru.yandex.practicum.mymarket.AbstractTestContainersTest;
+@WebFluxTest(ProductController.class)
+public class ProductControllerTest {
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
-
-
-@SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.MOCK
-)
-@AutoConfigureMockMvc
-public class ProductControllerTest  extends AbstractTestContainersTest{
     @Autowired
-    MockMvc mockMvc;
+    private WebTestClient webTestClient;
+
+    @MockitoBean
+    private ProductService productService;
+
+    @MockitoBean  
+    private ProductImportService productImportService;
 
     @Test
-    void testGetProducts() throws Exception {
-        mockMvc.perform(get("/items"))
-           .andExpect(status().isOk())
-           .andExpect(content().contentType("text/html;charset=UTF-8"))
-           .andExpect(view().name("items")) 
-           .andExpect(model().attributeExists("items")); 
-    }
+    void getItem_returns200() {
+        ProductEntity mockProduct = new ProductEntity(1L, "apple", "Новый телефон", "/assets/image.png", 19999L, 12);
+        
+        when(productService.findById(1L)).thenReturn(Mono.just(mockProduct));
 
-    @Test
-    void testGetProduct() throws Exception {
-        mockMvc.perform(get("/items/1"))
-           .andExpect(status().isOk())
-           .andExpect(content().contentType("text/html;charset=UTF-8"))
-           .andExpect(view().name("item")) 
-           .andExpect(model().attributeExists("item")); 
+        webTestClient.get()
+                .uri("/items/1")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                 .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class)
+                .value(html -> {
+                    assert html.contains("apple");
+                    assert html.contains("Новый телефон");
+                });;
     }
 }

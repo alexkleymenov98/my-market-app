@@ -1,42 +1,38 @@
 package ru.yandex.practicum.mymarket.repository;
 
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.r2dbc.repository.Modifying;
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import ru.yandex.practicum.mymarket.entity.ProductEntity;
 
 @Repository
-public interface ProductRepository extends JpaRepository<ProductEntity, Long>{
-    Optional<ProductEntity> findById(Long id);
-    List<ProductEntity> findByCountGreaterThan(int count);
-    Page<ProductEntity> findByTitleContainingIgnoreCase(String title, Pageable pageable);
+public interface ProductRepository extends R2dbcRepository<ProductEntity, Long>{
+    Mono<ProductEntity> findById(Long id);
+    Flux<ProductEntity> findByCountGreaterThan(int count);
 
     @Modifying
     @Transactional
-    @Query("UPDATE ProductEntity p SET p.count = p.count + 1 WHERE p.id = :id")
-    void incrementCount(@Param("id") Long id);
+    @Query("UPDATE products  SET count = count + 1 WHERE id = :id")
+    Mono<Void> incrementCount(@Param("id") Long id);
 
     @Modifying
     @Transactional
-    @Query("UPDATE ProductEntity p SET p.count = p.count - 1 WHERE p.id = :id AND p.count > 0")
-    void decrementCount(@Param("id") Long id);
+    @Query("UPDATE products  SET count = count - 1 WHERE id = :id AND count > 0")
+    Mono<Void> decrementCount(@Param("id") Long id);
 
     @Modifying
     @Transactional
-    @Query("UPDATE ProductEntity p SET p.count = 0 WHERE p.id = :id")
-    void setCountZero(@Param("id") Long id);
+    @Query("UPDATE products  SET count = 0 WHERE id = :id")
+    Mono<Void> setCountZero(@Param("id") Long id);
 
     @Modifying
     @Transactional
-    @Query("UPDATE ProductEntity p SET p.count = 0 WHERE p.count > 0")
-    void deleteAllFromCart();
+    @Query("UPDATE products  SET count = 0 WHERE count > 0")
+    Mono<Void> deleteAllFromCart();
 }

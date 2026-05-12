@@ -2,14 +2,19 @@ package ru.yandex.practicum.mymarket.service;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
+import reactor.core.publisher.Mono;
 import ru.yandex.practicum.mymarket.entity.ProductEntity;
 import ru.yandex.practicum.mymarket.repository.ProductRepository;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,21 +27,29 @@ public class ProductImportService {
         this.productRepository = productRepository;
     }
     
-    public void uploadProductsFromXlsx(MultipartFile file) throws IOException {
-        List<ProductEntity> products = parseExcelFile(file);
+    public Mono<Void> uploadProductsFromXlsx(FilePart filePart) {
+        Path tempFile = Paths.get(System.getProperty("java.io.tmpdir"), filePart.filename());
         
-        productRepository.saveAll(products);
+        return filePart.transferTo(tempFile)
+            .then(Mono.fromCallable(() -> parseExcelFile(tempFile.toFile())))
+            .flatMap(products -> productRepository.saveAll(products).then())
+            .doFinally(signalType -> {
+                try {
+                    Files.deleteIfExists(tempFile);
+                } catch (IOException e) {
+                    // ignore
+                }
+            });
     }
     
-    private List<ProductEntity> parseExcelFile(MultipartFile file) throws IOException {
+    private List<ProductEntity> parseExcelFile(File file) throws IOException {
         List<ProductEntity> products = new ArrayList<>();
         
-        try (InputStream inputStream = file.getInputStream();
+        try (InputStream inputStream = new FileInputStream(file);
              Workbook workbook = new XSSFWorkbook(inputStream)) {
             
-            Sheet sheet = workbook.getSheetAt(0); // Первый лист
+            Sheet sheet = workbook.getSheetAt(0);
             
-            // Пропускаем заголовок (первая строка)
             for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
                 if (row == null) continue;
@@ -55,14 +68,6 @@ public class ProductImportService {
         try {
             ProductEntity product = new ProductEntity();
             
-            // Предполагаемая структура Excel:
-            // Колонка 0: Название товара
-            // Колонка 1: Описание товара
-            // Колонка 2: url картинкитовара
-            // Колонка 3: Цена
-            // Колонка 4: Количество
-            
-            // Название (String)
             Cell titleCell = row.getCell(0);
             product.setTitle(getStringCellValue(titleCell));
 
@@ -72,23 +77,18 @@ public class ProductImportService {
             Cell imgCell = row.getCell(2);
             product.setImgPath(getStringCellValue(imgCell));
             
-            // Цена (Long)
             Cell priceCell = row.getCell(3);
             product.setPrice(getLongCellValue(priceCell));
             
-            // Количество (Integer)
             Cell countCell = row.getCell(4);
             product.setCount(getIntegerCellValue(countCell));
             
             return product;
             
         } catch (Exception e) {
-            System.err.println("Ошибка парсинга строки " + row.getRowNum() + ": " + e.getMessage());
             return null;
         }
     }
-    
-    // Вспомогательные методы для чтения ячеек
     
     private String getStringCellValue(Cell cell) {
         if (cell == null) return null;
