@@ -9,12 +9,13 @@ import org.springframework.web.reactive.result.view.Rendering;
 
 import reactor.core.publisher.Mono;
 import ru.yandex.practicum.mymarket.service.OrderService;
+import ru.yandex.practicum.mymarket.service.PaymentClientService;
 
 @Controller
 public class OrderController {
     private final OrderService orderService;
 
-    public OrderController(OrderService orderService){
+    public OrderController(OrderService orderService) {
         this.orderService = orderService;
     }
 
@@ -39,9 +40,8 @@ public class OrderController {
 
     @PostMapping("/buy")
     public Mono<Rendering> buy(){
-
         return orderService.create()
-            .map(orderId -> 
+               .map(orderId ->
                 Rendering
                 .view("redirect:/orders/" + orderId +"?newOrder=true" )
                 .build());

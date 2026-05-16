@@ -8,6 +8,7 @@ import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
 
+import ru.yandex.practicum.mymarket.service.PaymentClientService;
 import ru.yandex.practicum.mymarket.service.ProductService;
 import ru.yandex.practicum.mymarket.utils.ProductUtils;
 
@@ -15,22 +16,28 @@ import ru.yandex.practicum.mymarket.utils.ProductUtils;
 public class CartController {
 
     private final ProductService productService;
+    private final PaymentClientService paymentClientService;
 
 
-    public CartController(ProductService productService){
+    public CartController(ProductService productService, PaymentClientService paymentClientService) {
         this.productService = productService;
+        this.paymentClientService = paymentClientService;
     }
 
     @GetMapping("/cart/items")
     public Mono<Rendering> getCart(){
 
+
         return productService.getProductFromCart().collectList()
         .flatMap(products -> {
             Long total = ProductUtils.getProductsTotal(products);
 
+            Mono<Long> balance = paymentClientService.getBalance();
+
             return Mono.just(Rendering.view("cart")
                 .modelAttribute("items", products)
                 .modelAttribute("total", total)
+                    .modelAttribute("balance", balance)
                 .build());
 
         });

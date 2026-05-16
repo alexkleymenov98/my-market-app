@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 import ru.yandex.practicum.mymarket.entity.OrderEntity;
 import ru.yandex.practicum.mymarket.entity.OrderProductEntity;
 import ru.yandex.practicum.mymarket.entity.ProductEntity;
+import ru.yandex.practicum.mymarket.payment.model.PaymentRequest;
 import ru.yandex.practicum.mymarket.repository.OrderProductRepository;
 import ru.yandex.practicum.mymarket.repository.OrderRepository;
 import ru.yandex.practicum.mymarket.repository.ProductRepository;
@@ -22,11 +23,13 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderProductRepository orderProductRepository;
     private final ProductRepository productRepository;
+    private final PaymentClientService paymentClientService;
 
-    public OrderService(OrderRepository orderRepository, ProductRepository productRepository, OrderProductRepository orderProductRepository){
+    public OrderService(OrderRepository orderRepository, ProductRepository productRepository, OrderProductRepository orderProductRepository, PaymentClientService paymentClientService) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.orderProductRepository = orderProductRepository;
+        this.paymentClientService = paymentClientService;
     }
 
     @Transactional
@@ -42,25 +45,36 @@ public class OrderService {
                 .sum();
             
             order.setTotalSum(totalSum);
-            
-            // Сохраняем заказ
-            return orderRepository.save(order)
-                .flatMap(savedOrder -> {
-                    // Создаем связи заказ-продукт
-                    Flux<OrderProductEntity> orderProducts = Flux.fromIterable(products)
-                        .map(product -> {
-                            OrderProductEntity op = new OrderProductEntity();
-                            op.setOrderId(savedOrder.getId());
-                            op.setProductId(product.getId());
-                            op.setCount(product.getCount()); // или другое количество
-                            return op;
-                        });
-                    
-                    // Сохраняем все связи
-                    return orderProductRepository.saveAll(orderProducts)
-                        .then(productRepository.deleteAllFromCart())
-                        .thenReturn(savedOrder.getId());
-                });
+
+            PaymentRequest paymentRequest = new PaymentRequest();
+            paymentRequest.setAmount(totalSum);
+
+            return paymentClientService.pay(paymentRequest)
+                    .flatMap(paymentResult->{
+                        if (Boolean.FALSE.equals(paymentResult)) {
+                            return Mono.error(new RuntimeException("Payment failed"));
+                        }
+
+                        return orderRepository.save(order)
+                                .flatMap(savedOrder -> {
+                                    // Создаем связи заказ-продукт
+                                    Flux<OrderProductEntity> orderProducts = Flux.fromIterable(products)
+                                            .map(product -> {
+                                                OrderProductEntity op = new OrderProductEntity();
+                                                op.setOrderId(savedOrder.getId());
+                                                op.setProductId(product.getId());
+                                                op.setCount(product.getCount()); // или другое количество
+                                                return op;
+                                            });
+
+                                    // Сохраняем все связи
+                                    return orderProductRepository.saveAll(orderProducts)
+                                            .then(productRepository.deleteAllFromCart())
+                                            .thenReturn(savedOrder.getId());
+                                });
+                    });
+
+
         });
     }
 
