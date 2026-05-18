@@ -10,7 +10,7 @@
 	</parent>
 	
 	<groupId>ru.yandex.practicum.market</groupId>
-	<artifactId>my-market-app</artifactId>
+	<artifactId>shop</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>shop</name>
 	<description>My Market Application</description>
@@ -86,6 +86,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+		</dependency>
     	
 		<!-- ===== ТЕСТОВЫЕ ЗАВИСИМОСТИ ===== -->
 		
@@ -109,6 +114,32 @@
     		<artifactId>postgresql</artifactId>
 			<version>${testcontainers.version}</version>
     		<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>it.ozimov</groupId>
+			<artifactId>embedded-redis</artifactId>
+			<version>0.7.3</version>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-simple</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<!-- MockWebServer для мокирования payment-service в тестах -->
+		<dependency>
+			<groupId>com.squareup.okhttp3</groupId>
+			<artifactId>mockwebserver</artifactId>
+			<version>4.12.0</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.squareup.okhttp3</groupId>
+			<artifactId>okhttp</artifactId>
+			<version>4.12.0</version>
+			<scope>test</scope>
 		</dependency>
 		
 		<!-- Обязательно для JUnit 5 -->

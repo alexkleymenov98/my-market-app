@@ -8,6 +8,8 @@
 # Запустить окружение
 cd infra
 
+mvn clean package -DskipTests
+
 docker compose up -d
 
 Поднимутся контейнеры для приложения и  postgress
@@ -17,13 +19,27 @@ docker compose up -d
 # собрать проект для разработки
 cd infra
 
-docker compose up -d db
+# Модуль витрины
+mvn clean package -DskipTests
 
-cd ../mymarket
+docker compose up -d db redis
+
+cd ../my-marker-app/shop
 
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
 Открыть http://localhost:8080
+
+# Модуль платежей
+mvn clean package -DskipTests
+
+docker compose up -d db redis
+
+cd ../my-marker-app/payment
+
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+
+Открыть http://localhost:8081
 
 # Запустить тесты
 mvn test

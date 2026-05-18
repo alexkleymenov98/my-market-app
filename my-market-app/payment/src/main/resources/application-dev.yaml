@@ -2,7 +2,7 @@ spring:
   application:
     name: payment
   r2dbc:
-    url: r2dbc:postgresql://db:5432/market
+    url: r2dbc:postgresql://localhost:5432/market
     username: postgres
     password: postgres
 server: 

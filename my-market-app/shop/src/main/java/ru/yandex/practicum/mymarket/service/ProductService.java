@@ -1,5 +1,6 @@
 package ru.yandex.practicum.mymarket.service;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -9,6 +10,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
 
@@ -17,11 +19,18 @@ import reactor.core.publisher.Mono;
 import ru.yandex.practicum.mymarket.entity.ProductEntity;
 import ru.yandex.practicum.mymarket.repository.ProductRepository;
 
+
 @Service
 public class ProductService {
+    private static final String CACHE_NAME = "products";
+    private static final String CACHE_NAME_CART = "products_cart";
+    private static final Duration CACHE_TTL = Duration.ofMinutes(10);
+
     private final ProductRepository productRepository;
 
-     @Autowired
+    private final ReactiveRedisTemplate<String, ProductEntity> redisTemplate;
+
+    @Autowired
     private DatabaseClient databaseClient;
 
     private ProductEntity mapToProduct(Map<String, Object> row) {
@@ -35,22 +44,39 @@ public class ProductService {
         return product;
     }
 
-    public ProductService(ProductRepository productRepository){
+    public ProductService(ProductRepository productRepository, ReactiveRedisTemplate<String, ProductEntity> redisTemplate) {
         this.productRepository = productRepository;
+        this.redisTemplate = redisTemplate;
     }
 
     public Mono<ProductEntity> findById(Long id){
-        return productRepository.findById(id);
+        String cacheKey = CACHE_NAME + id;
+        return redisTemplate.opsForValue()
+                .get(cacheKey)
+                .switchIfEmpty(Mono.defer(() -> productRepository.findById(id)
+                        .flatMap(product -> redisTemplate.opsForValue()
+                                .set(cacheKey, product, CACHE_TTL)
+                                .thenReturn(product))));
     }
 
     public Flux<ProductEntity> getProductFromCart(){
-        return productRepository.findByCountGreaterThan(0);
+        return redisTemplate.opsForList().range(CACHE_NAME_CART, 0, -1)
+                .collectList()
+                .filter(list -> !list.isEmpty())
+                .flatMapMany(Flux::fromIterable)
+                .switchIfEmpty(Flux.defer(()->productRepository.findByCountGreaterThan(0)
+                        .collectList()
+                        .flatMapMany(products ->
+                                redisTemplate.opsForList()
+                                        .leftPushAll(CACHE_NAME_CART, products)
+                                        .then(redisTemplate.expire(CACHE_NAME_CART, CACHE_TTL))
+                                        .thenMany(Flux.fromIterable(products)))));
     }
 
     public Mono<Page<ProductEntity>> findAll(int pageNumber, int pageSize, String sort, String search){
         Pageable pageable;
 
-        int pageNumerIndex = Math.max(0, pageNumber - 1);
+        int pageNumberIndex = Math.max(0, pageNumber - 1);
 
         Sort sortObj;
         String sortColumn = "id";
@@ -65,15 +91,15 @@ public class ProductService {
                 sortColumn = "price";
             }
 
-            pageable = PageRequest.of(pageNumerIndex, pageSize, sortObj);
+            pageable = PageRequest.of(pageNumberIndex, pageSize, sortObj);
         } else {
-            pageable = PageRequest.of(pageNumerIndex, pageSize);
+            pageable = PageRequest.of(pageNumberIndex, pageSize);
 
         }
 
         Mono<Long> countMono = productRepository.count();
 
-        int offset = pageNumerIndex * pageSize;
+        int offset = pageNumberIndex * pageSize;
 
          Mono<List<ProductEntity>> productsMono = databaseClient.sql(String.format("""
             SELECT * FROM products
@@ -88,7 +114,6 @@ public class ProductService {
             .bind("limit", pageSize)
             .bind("offset", offset)
             .bind("search", search)
-            // .bind("sort", sortColumn)
             .fetch()
             .all()
             .map(this::mapToProduct)
@@ -100,18 +125,23 @@ public class ProductService {
     }
 
     public Mono<Void> updateProductInCart(Long id, String action){
-        if("PLUS".equals(action)){
-            return productRepository.incrementCount(id);
-        }
 
-        if("MINUS".equals(action)){
-            return productRepository.decrementCount(id);
-        }
+       return  redisTemplate.delete(CACHE_NAME_CART)
+                .then(Mono.defer(() -> {
+                    if("PLUS".equals(action)){
+                        return productRepository.incrementCount(id);
+                    }
 
-        if("DELETE".equals(action)){
-            return productRepository.setCountZero(id);
-        }
+                    if("MINUS".equals(action)){
+                        return productRepository.decrementCount(id);
+                    }
 
-        return Mono.empty();
+                    if("DELETE".equals(action)){
+                        return productRepository.setCountZero(id);
+                    }
+
+                    return Mono.empty();
+                }));
+
     }
 }
