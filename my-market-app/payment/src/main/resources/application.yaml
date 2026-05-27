@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: payment
+  r2dbc:
+    url: r2dbc:postgresql://db:5432/market
+    username: postgres
+    password: postgres
+server: 
+  port: 8081
+
+# Логирование HTTP запросов
+logging:
+  level:
+    org.springframework.web.reactive: DEBUG
+    org.springframework.http.server.reactive: DEBUG
+    reactor.netty.http.server: DEBUG
+    org.springframework.web.server: DEBUG
