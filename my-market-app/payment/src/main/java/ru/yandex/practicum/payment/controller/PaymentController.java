@@ -25,9 +25,10 @@ public class PaymentController implements PrivateApi {
 
     @Override
     public Mono<ResponseEntity<BalanceResponse>> getBalance(
+            String username,
         @Parameter(hidden = true) final ServerWebExchange exchange
     ){
-        return balanceService.getBalance()
+        return balanceService.getBalance(username)
                 .map(ResponseEntity::ok);
     }
 

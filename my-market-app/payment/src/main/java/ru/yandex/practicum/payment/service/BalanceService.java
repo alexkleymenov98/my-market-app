@@ -16,13 +16,13 @@ public class BalanceService {
         this.balanceRepository = balanceRepository;
     }
 
-    public Mono<BalanceResponse> getBalance(){
+    public Mono<BalanceResponse> getBalance(String username){
 
         BalanceResponse balanceResponse = new BalanceResponse();
 
         balanceResponse.setBalance(0L);
 
-        return balanceRepository.findById("test")
+        return balanceRepository.findById(username)
                 .flatMap(balance -> {
                     balanceResponse.setBalance(balance.getBalance());
 

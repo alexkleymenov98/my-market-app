@@ -1,17 +1,26 @@
 spring:
+  webflux:
+   log-request-details: true  # Включит логирование заголовков
   application:
     name: payment
   r2dbc:
     url: r2dbc:postgresql://localhost:5432/market
     username: postgres
     password: postgres
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9000/realms/market
 server: 
   port: 8081
 
 # Логирование HTTP запросов
 logging:
   level:
-    org.springframework.web.reactive: DEBUG
-    org.springframework.http.server.reactive: DEBUG
-    reactor.netty.http.server: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
+    org.springframework.web: DEBUG
     org.springframework.web.server: DEBUG
+    org.springframework.security.web.server: DEBUG
+

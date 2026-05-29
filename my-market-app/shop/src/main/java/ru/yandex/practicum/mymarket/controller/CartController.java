@@ -8,10 +8,13 @@ import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
 
+import ru.yandex.practicum.mymarket.entity.ProductEntity;
 import ru.yandex.practicum.mymarket.service.PaymentClientService;
 import ru.yandex.practicum.mymarket.service.ProductService;
 import ru.yandex.practicum.mymarket.utils.ProductUtils;
 import ru.yandex.practicum.mymarket.utils.SecurityUtils;
+
+import java.util.List;
 
 @Controller
 public class CartController {
@@ -26,24 +29,29 @@ public class CartController {
     }
 
     @GetMapping("/cart/items")
-    public Mono<Rendering> getCart(){
-
-
+    public Mono<Rendering> getCart() {
         return SecurityUtils.getCurrentUsername()
                 .defaultIfEmpty("anonymous")
-                .flatMap(username->productService.getProductFromCart(username).collectList()
-                        .flatMap(products -> {
-                            Long total = ProductUtils.getProductsTotal(products);
+                .flatMap(username ->
+                        productService.getProductFromCart(username).collectList()
+                                .flatMap(products -> {
+                                    Long total = ProductUtils.getProductsTotal(products);
+                                    Mono<Long> balanceMono = paymentClientService.getBalance(username);
 
-                            Mono<Long> balance = paymentClientService.getBalance();
+                                    // Ждем оба значения: products и balance
+                                    return Mono.zip(Mono.just(products), balanceMono)
+                                            .map(tuple -> {
+                                                List<ProductEntity> productsList = tuple.getT1();
+                                                Long balanceValue = tuple.getT2();
 
-                            return Mono.just(Rendering.view("cart")
-                                    .modelAttribute("items", products)
-                                    .modelAttribute("total", total)
-                                    .modelAttribute("balance", balance)
-                                    .build());
-
-                        }));
+                                                return Rendering.view("cart")
+                                                        .modelAttribute("items", productsList)
+                                                        .modelAttribute("total", total)
+                                                        .modelAttribute("balance", balanceValue)
+                                                        .build();
+                                            });
+                                })
+                );
     }
 
 
@@ -56,8 +64,10 @@ public class CartController {
                 String action = formData.getFirst("action");
                 Long id = Long.parseLong(formData.getFirst("id"));
 
-                return productService.updateProductInCart(id, action)
-                .then(productService.getProductFromCart("user").collectList());
+                return SecurityUtils.getCurrentUsername()
+                        .defaultIfEmpty("anonymous")
+                        .flatMap(username->productService.updateProductInCart(id, action)
+                                .then(productService.getProductFromCart("user").collectList()));
             })
             .flatMap(products -> {
                 Long total = ProductUtils.getProductsTotal(products);
