@@ -20,7 +20,10 @@
                     <a href="/cart/items" class="btn btn-secondary bi bi-cart4" th:if="${username != 'anonymous'}"> Корзина</a>
                     <a href="/items" class="btn btn-secondary bi bi-arrow-left-square"> Главная</a>
                     <a href="/login" class="btn btn-secondary bi bi-arrow-left-square" th:if="${username == 'anonymous'}"> Войти</a>
-                    <span class="btn btn-secondary" th:if="${username != 'anonymous'}" th:text="${username}"> </span>
+                    <form th:action="@{/logout}" th:if="${username != 'anonymous'}" method="post">
+                        <span class="btn btn-secondary" th:if="${username != 'anonymous'}" th:text="${username}">
+                        </span><button type="submit">Выйти</button>
+                    </form>
                 </div>
             </div>
         </div>

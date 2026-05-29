@@ -10,8 +10,12 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 
+import org.springframework.security.web.server.authentication.logout.RedirectServerLogoutSuccessHandler;
+import org.springframework.security.web.server.authentication.logout.ServerLogoutSuccessHandler;
 import org.springframework.security.web.server.context.WebSessionServerSecurityContextRepository;
 import org.springframework.security.web.server.authentication.RedirectServerAuthenticationSuccessHandler;
+
+import java.net.URI;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -46,7 +50,15 @@ public class SecureConfig {
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
+                        .logoutSuccessHandler(logoutSuccessHandler())
                 )
                 .build();
+    }
+
+    @Bean
+    public ServerLogoutSuccessHandler logoutSuccessHandler() {
+        RedirectServerLogoutSuccessHandler handler = new RedirectServerLogoutSuccessHandler();
+        handler.setLogoutSuccessUrl(URI.create("/items"));
+        return handler;
     }
 }

@@ -74,8 +74,12 @@ components:
     PaymentRequest:
       type: object
       required:
+        - username
         - amount
       properties:
+        username:
+          type: string
+          description: username пользователя
         amount:
           type: integer
           format: int64
