@@ -16,9 +16,11 @@
                     <h2>
                         <span class="badge text-bg-success">Витрина магазина</span>
                     </h2>
-                    <a href="/orders" class="btn btn-secondary ms-auto bi bi-file-earmark-text"> Заказы</a>
-                    <a href="/cart/items" class="btn btn-secondary bi bi-cart4"> Корзина</a>
+                    <a href="/orders" class="btn btn-secondary ms-auto bi bi-file-earmark-text" th:if="${username != 'anonymous'}"> Заказы</a>
+                    <a href="/cart/items" class="btn btn-secondary bi bi-cart4" th:if="${username != 'anonymous'}"> Корзина</a>
                     <a href="/items" class="btn btn-secondary bi bi-arrow-left-square"> Главная</a>
+                    <a href="/login" class="btn btn-secondary bi bi-arrow-left-square" th:if="${username == 'anonymous'}"> Войти</a>
+                    <span class="btn btn-secondary" th:if="${username != 'anonymous'}" th:text="${username}"> </span>
                 </div>
             </div>
         </div>
@@ -32,7 +34,7 @@
                             <span class="badge text-bg-success justify-content-end" th:text="${item.getPrice()}+' руб.'"></span>
                         </h5>
                         <p class="card-text" th:text="${item.getDescription()}"></p>
-                        <form th:action="@{${'/items/'+item.getId()}}" method="post">
+                        <form th:action="@{${'/items/'+item.getId()}}" method="post" th:if="${username != 'anonymous'}">
                             <div class="hstack gap-3">
                                 <button type="submit" class="btn btn-outline-secondary" name="action" value="MINUS">-</button>
                                 <span th:text="${item.getCount()}"></span>

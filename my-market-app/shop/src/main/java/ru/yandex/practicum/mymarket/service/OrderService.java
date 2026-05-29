@@ -14,6 +14,7 @@ import ru.yandex.practicum.mymarket.entity.OrderEntity;
 import ru.yandex.practicum.mymarket.entity.OrderProductEntity;
 import ru.yandex.practicum.mymarket.entity.ProductEntity;
 import ru.yandex.practicum.mymarket.payment.model.PaymentRequest;
+import ru.yandex.practicum.mymarket.repository.CartProductRepository;
 import ru.yandex.practicum.mymarket.repository.OrderProductRepository;
 import ru.yandex.practicum.mymarket.repository.OrderRepository;
 import ru.yandex.practicum.mymarket.repository.ProductRepository;
@@ -24,12 +25,15 @@ public class OrderService {
     private final OrderProductRepository orderProductRepository;
     private final ProductRepository productRepository;
     private final PaymentClientService paymentClientService;
+    private final CartProductRepository productCartRepository;
 
-    public OrderService(OrderRepository orderRepository, ProductRepository productRepository, OrderProductRepository orderProductRepository, PaymentClientService paymentClientService) {
+    public OrderService(OrderRepository orderRepository, ProductRepository productRepository, OrderProductRepository orderProductRepository, PaymentClientService paymentClientService, CartProductRepository productCartRepository) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.orderProductRepository = orderProductRepository;
         this.paymentClientService = paymentClientService;
+        this.productCartRepository = productCartRepository;
+
     }
 
     @Transactional
@@ -69,7 +73,7 @@ public class OrderService {
 
                                     // Сохраняем все связи
                                     return orderProductRepository.saveAll(orderProducts)
-                                            .then(productRepository.deleteAllFromCart())
+                                            .then(productCartRepository.deleteAllFromCart("user"))
                                             .thenReturn(savedOrder.getId());
                                 });
                     });

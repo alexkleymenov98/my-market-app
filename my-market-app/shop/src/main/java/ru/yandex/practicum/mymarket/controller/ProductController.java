@@ -13,13 +13,13 @@ import org.springframework.web.reactive.result.view.Rendering;
 import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
-import ru.yandex.practicum.mymarket.entity.ProductEntity;
 import ru.yandex.practicum.mymarket.service.ProductImportService;
 import ru.yandex.practicum.mymarket.service.ProductService;
 import ru.yandex.practicum.mymarket.utils.ProductUtils;
 
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.http.codec.multipart.Part;
+import ru.yandex.practicum.mymarket.utils.SecurityUtils;
 
 @Controller
 public class ProductController {
@@ -32,10 +32,9 @@ public class ProductController {
         this.productImportService = productImportService;
     }
 
-     @GetMapping(value = {"/items", "/"})
+    @GetMapping(value = {"/items", "/"})
     public Mono<Rendering> getProducts(
         ServerWebExchange exchange
-        
     )
         {
            MultiValueMap<String, String>  queryParams = exchange.getRequest().getQueryParams();
@@ -64,16 +63,21 @@ public class ProductController {
             final boolean importSuccess = Optional.ofNullable(queryParams.getFirst("importSuccess"))
                                             .map(Boolean::parseBoolean)
                                             .orElse(false);
-           
+            final int pageNumberTemp = pageNumber;
+            final int pageSizeTemp = pageSize;
 
-            return productService.findAll(pageNumber, pageSize, sort, search)
-                        .map(page ->Rendering.view("items")
-                        .modelAttribute("items", ProductUtils.mapToRowProducts(page.getContent(), 3))
-                        .modelAttribute("paging", page)
-                        .modelAttribute("sort", sort)
-                        .modelAttribute("search", search)
-                        .modelAttribute("importSuccess", importSuccess)
-                        .build());
+
+            return SecurityUtils.getCurrentUsername()
+                    .defaultIfEmpty("anonymous")
+                    .flatMap(username->productService.findAll(pageNumberTemp, pageSizeTemp, sort, search, username)
+                            .map(page ->Rendering.view("items")
+                                    .modelAttribute("items", ProductUtils.mapToRowProducts(page.getContent(), 3))
+                                    .modelAttribute("paging", page)
+                                    .modelAttribute("sort", sort)
+                                    .modelAttribute("search", search)
+                                    .modelAttribute("importSuccess", importSuccess)
+                                    .modelAttribute("username", username)
+                                    .build()));
 
     }
 
@@ -103,11 +107,13 @@ public class ProductController {
 
     @GetMapping("/items/{id}")
     public Mono<Rendering> getProductDetail(@PathVariable Long id){
-        Mono<ProductEntity> item = productService.findById(id);
-
-        return Mono.just(Rendering.view("item")
-                .modelAttribute("item", item)
-                .build());
+        return SecurityUtils.getCurrentUsername().
+                defaultIfEmpty("anonymous")
+                .flatMap(username->productService.findById(id, username)
+                        .flatMap(item -> Mono.just(Rendering.view("item")
+                                .modelAttribute("item", item)
+                                        .modelAttribute("username", username)
+                                .build())));
     }
 
     @PostMapping("/items/{id}")
@@ -125,7 +131,7 @@ public class ProductController {
             })
             .flatMap(action ->productService
             .updateProductInCart(id, action))
-            .then(productService.findById(id).map(item -> 
+            .then(productService.findById(id, "user").map(item ->
                 Rendering.view("item")
                 .modelAttribute("item", item)
                 .build()));

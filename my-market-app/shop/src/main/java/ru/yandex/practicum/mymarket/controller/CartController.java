@@ -11,6 +11,7 @@ import reactor.core.publisher.Mono;
 import ru.yandex.practicum.mymarket.service.PaymentClientService;
 import ru.yandex.practicum.mymarket.service.ProductService;
 import ru.yandex.practicum.mymarket.utils.ProductUtils;
+import ru.yandex.practicum.mymarket.utils.SecurityUtils;
 
 @Controller
 public class CartController {
@@ -28,19 +29,21 @@ public class CartController {
     public Mono<Rendering> getCart(){
 
 
-        return productService.getProductFromCart().collectList()
-        .flatMap(products -> {
-            Long total = ProductUtils.getProductsTotal(products);
+        return SecurityUtils.getCurrentUsername()
+                .defaultIfEmpty("anonymous")
+                .flatMap(username->productService.getProductFromCart(username).collectList()
+                        .flatMap(products -> {
+                            Long total = ProductUtils.getProductsTotal(products);
 
-            Mono<Long> balance = paymentClientService.getBalance();
+                            Mono<Long> balance = paymentClientService.getBalance();
 
-            return Mono.just(Rendering.view("cart")
-                .modelAttribute("items", products)
-                .modelAttribute("total", total)
-                    .modelAttribute("balance", balance)
-                .build());
+                            return Mono.just(Rendering.view("cart")
+                                    .modelAttribute("items", products)
+                                    .modelAttribute("total", total)
+                                    .modelAttribute("balance", balance)
+                                    .build());
 
-        });
+                        }));
     }
 
 
@@ -54,7 +57,7 @@ public class CartController {
                 Long id = Long.parseLong(formData.getFirst("id"));
 
                 return productService.updateProductInCart(id, action)
-                .then(productService.getProductFromCart().collectList());
+                .then(productService.getProductFromCart("user").collectList());
             })
             .flatMap(products -> {
                 Long total = ProductUtils.getProductsTotal(products);

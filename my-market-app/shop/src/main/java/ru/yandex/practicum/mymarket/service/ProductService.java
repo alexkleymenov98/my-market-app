@@ -16,8 +16,11 @@ import org.springframework.stereotype.Service;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import ru.yandex.practicum.mymarket.entity.CartProductEntity;
 import ru.yandex.practicum.mymarket.entity.ProductEntity;
+import ru.yandex.practicum.mymarket.repository.CartProductRepository;
 import ru.yandex.practicum.mymarket.repository.ProductRepository;
+import ru.yandex.practicum.mymarket.utils.SecurityUtils;
 
 
 @Service
@@ -27,6 +30,7 @@ public class ProductService {
     private static final Duration CACHE_TTL = Duration.ofMinutes(10);
 
     private final ProductRepository productRepository;
+    private final CartProductRepository cartProductRepository;
 
     private final ReactiveRedisTemplate<String, ProductEntity> redisTemplate;
 
@@ -34,6 +38,7 @@ public class ProductService {
     private DatabaseClient databaseClient;
 
     private ProductEntity mapToProduct(Map<String, Object> row) {
+        System.out.println(row);
         ProductEntity product = new ProductEntity();
         product.setId((Long) row.get("id"));
         product.setTitle((String) row.get("title"));
@@ -44,36 +49,72 @@ public class ProductService {
         return product;
     }
 
-    public ProductService(ProductRepository productRepository, ReactiveRedisTemplate<String, ProductEntity> redisTemplate) {
+    public ProductService(ProductRepository productRepository, ReactiveRedisTemplate<String, ProductEntity> redisTemplate, CartProductRepository cartProductRepository) {
         this.productRepository = productRepository;
+        this.cartProductRepository = cartProductRepository;
         this.redisTemplate = redisTemplate;
     }
 
-    public Mono<ProductEntity> findById(Long id){
-        String cacheKey = CACHE_NAME + id;
+    public Mono<ProductEntity> findById(Long id, String username){
+        String cacheKey = CACHE_NAME + "_" + username + "_" + id ;
         return redisTemplate.opsForValue()
                 .get(cacheKey)
-                .switchIfEmpty(Mono.defer(() -> productRepository.findById(id)
+                .switchIfEmpty(Mono.defer(() -> databaseClient.sql(String.format("""
+                    SELECT
+                    	p.id,
+                        p.title,
+                        p.description,
+                        p.img_path,
+                        p.price,
+                    	coalesce(cp.count ,0) as count
+                    from products p
+                    left join cart_product cp on p.id  = cp.product_id and cp.username  = :username
+                    where p.id  = :id
+                    """))
+                        .bind("id", id)
+                        .bind("username", username)
+                        .map((row, metadata) -> new ProductEntity(
+                                row.get("id", Long.class),
+                                row.get("title", String.class),
+                                row.get("description", String.class),
+                                row.get("img_path", String.class),
+                                row.get("price", Long.class),
+                                row.get("count", Integer.class)
+                        ))
+                        .one()
                         .flatMap(product -> redisTemplate.opsForValue()
                                 .set(cacheKey, product, CACHE_TTL)
                                 .thenReturn(product))));
     }
 
-    public Flux<ProductEntity> getProductFromCart(){
-        return redisTemplate.opsForList().range(CACHE_NAME_CART, 0, -1)
+    public Flux<ProductEntity> getProductFromCart(String username){
+        String CURRENT_CACHE_NAME_CART = CACHE_NAME_CART + username;
+        return redisTemplate.opsForList().range(CURRENT_CACHE_NAME_CART, 0, -1)
                 .collectList()
                 .filter(list -> !list.isEmpty())
                 .flatMapMany(Flux::fromIterable)
-                .switchIfEmpty(Flux.defer(()->productRepository.findByCountGreaterThan(0)
+                .switchIfEmpty(Flux.defer(()->databaseClient.sql(String.format("""
+                    SELECT
+                    	p.id,
+                        p.title,
+                        p.description,
+                        p.img_path,
+                        p.price,
+                    	coalesce(cp.count ,0) as count
+                    from products p
+                    left join cart_product cp on p.id  = cp.product_id and cp.username  = :username
+                    where cp.count > 0
+                    """)).bind("username", username)
+                                .fetch().all().map(this::mapToProduct)
                         .collectList()
                         .flatMapMany(products ->
                                 redisTemplate.opsForList()
-                                        .leftPushAll(CACHE_NAME_CART, products)
-                                        .then(redisTemplate.expire(CACHE_NAME_CART, CACHE_TTL))
+                                        .leftPushAll(CURRENT_CACHE_NAME_CART, products)
+                                        .then(redisTemplate.expire(CURRENT_CACHE_NAME_CART, CACHE_TTL))
                                         .thenMany(Flux.fromIterable(products)))));
     }
 
-    public Mono<Page<ProductEntity>> findAll(int pageNumber, int pageSize, String sort, String search){
+    public Mono<Page<ProductEntity>> findAll(int pageNumber, int pageSize, String sort, String search, String username){
         Pageable pageable;
 
         int pageNumberIndex = Math.max(0, pageNumber - 1);
@@ -102,7 +143,15 @@ public class ProductService {
         int offset = pageNumberIndex * pageSize;
 
          Mono<List<ProductEntity>> productsMono = databaseClient.sql(String.format("""
-            SELECT * FROM products
+            SELECT 
+                p.id,
+                p.title,
+                p.description,
+                p.img_path,
+                p.price,
+                coalesce(cp.count, 0) as count
+            FROM products p
+            LEFT JOIN cart_product cp ON p.id = cp.product_id AND cp.username = :username
             WHERE (:search IS NULL OR :search = '' OR 
             LOWER(title) LIKE LOWER(CONCAT('%%', :search, '%%')) OR
             LOWER(description) LIKE LOWER(CONCAT('%%', :search, '%%')))
@@ -114,6 +163,7 @@ public class ProductService {
             .bind("limit", pageSize)
             .bind("offset", offset)
             .bind("search", search)
+                 .bind("username", username)
             .fetch()
             .all()
             .map(this::mapToProduct)
@@ -125,23 +175,37 @@ public class ProductService {
     }
 
     public Mono<Void> updateProductInCart(Long id, String action){
+        return Mono.defer(() -> SecurityUtils.getCurrentUsername()
+                .flatMap(username -> {
+                    String userCartKey = CACHE_NAME_CART + username;
+                    String productKey = CACHE_NAME + "_" + username + "_" + id; // если есть
 
-       return  redisTemplate.delete(CACHE_NAME_CART)
-                .then(Mono.defer(() -> {
-                    if("PLUS".equals(action)){
-                        return productRepository.incrementCount(id);
-                    }
+                    return cartProductRepository.findByProductIdAndUsername(id, username).
+                            hasElement()
+                            .flatMap(exists->{
+                                Mono<Void> operation;
+                                if ("PLUS".equals(action)) {
+                                    if(exists){
+                                        operation = cartProductRepository.incrementCount(id, username);
+                                    }else {
 
-                    if("MINUS".equals(action)){
-                        return productRepository.decrementCount(id);
-                    }
+                                        operation = cartProductRepository.insertRow(username, id, 1).then();
+//
+                                    }
+                                } else if ("MINUS".equals(action)) {
+                                    operation = cartProductRepository.decrementCount(id, username);
+                                } else if ("DELETE".equals(action)) {
+                                    operation = cartProductRepository.deleteAllFromCart(username);
+                                } else {
+                                    operation = Mono.empty();
+                                }
 
-                    if("DELETE".equals(action)){
-                        return productRepository.setCountZero(id);
-                    }
-
-                    return Mono.empty();
+                                // Удаляем несколько ключей
+                                return operation
+                                        .then(redisTemplate.delete(userCartKey))
+                                        .then(redisTemplate.delete(productKey))
+                                        .then();
+                            });
                 }));
-
     }
 }

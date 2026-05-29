@@ -15,24 +15,4 @@ import ru.yandex.practicum.mymarket.entity.ProductEntity;
 public interface ProductRepository extends R2dbcRepository<ProductEntity, Long>{
     Mono<ProductEntity> findById(Long id);
     Flux<ProductEntity> findByCountGreaterThan(int count);
-
-    @Modifying
-    @Transactional
-    @Query("UPDATE products  SET count = count + 1 WHERE id = :id")
-    Mono<Void> incrementCount(@Param("id") Long id);
-
-    @Modifying
-    @Transactional
-    @Query("UPDATE products  SET count = count - 1 WHERE id = :id AND count > 0")
-    Mono<Void> decrementCount(@Param("id") Long id);
-
-    @Modifying
-    @Transactional
-    @Query("UPDATE products  SET count = 0 WHERE id = :id")
-    Mono<Void> setCountZero(@Param("id") Long id);
-
-    @Modifying
-    @Transactional
-    @Query("UPDATE products  SET count = 0 WHERE count > 0")
-    Mono<Void> deleteAllFromCart();
 }
