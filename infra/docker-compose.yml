@@ -55,18 +55,21 @@ services:
       # Для входа в UI будут использоваться эти параметры
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - keycloak_data:/opt/keycloak/data
     ports:
       - "9000:8080"
     networks:
       - market-network
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9000/health/ready" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health/ready" ]
       interval: 10s
       timeout: 5s
       retries: 5 
 volumes:
   postgres_market_data:
   redis-data:
+  keycloak_data:
 
 networks:
   market-network:

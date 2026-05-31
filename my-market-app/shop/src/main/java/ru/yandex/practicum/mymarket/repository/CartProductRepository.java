@@ -25,13 +25,18 @@ public interface CartProductRepository extends R2dbcRepository<CartProductEntity
 
     @Modifying
     @Transactional
-    @Query("UPDATE cart_product  SET count = 0 WHERE product_id = :id and username = :username")
+    @Query("DELETE FROM cart_product WHERE product_id = :id and username = :username")
     Mono<Void> setCountZero(@Param("id") Long id, @Param("username")String username);
 
     @Modifying
     @Transactional
-    @Query("UPDATE cart_product  SET count = 0 WHERE count > 0 AND username = :username")
-    Mono<Void> deleteAllFromCart(@Param("username") String username);
+    @Query("DELETE FROM cart_product WHERE product_id = :id AND username = :username")
+    Mono<Void> deleteProductFromCart(@Param("id") Long id, @Param("username")String username);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM cart_product WHERE username = :username")
+    Mono<Void> deleteAllFromCart(@Param("username")String username);
 
     @Query("SELECT * FROM cart_product WHERE product_id = :id AND username = :username")
     Mono<CartProductEntity> findByProductIdAndUsername(@Param("id") Long id, @Param("username") String username);

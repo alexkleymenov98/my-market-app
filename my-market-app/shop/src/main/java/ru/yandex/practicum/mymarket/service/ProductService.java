@@ -38,7 +38,6 @@ public class ProductService {
     private DatabaseClient databaseClient;
 
     private ProductEntity mapToProduct(Map<String, Object> row) {
-        System.out.println(row);
         ProductEntity product = new ProductEntity();
         product.setId((Long) row.get("id"));
         product.setTitle((String) row.get("title"));
@@ -87,31 +86,46 @@ public class ProductService {
                                 .thenReturn(product))));
     }
 
-    public Flux<ProductEntity> getProductFromCart(String username){
+    public Flux<ProductEntity> getProductFromCart(String username) {
         String CURRENT_CACHE_NAME_CART = CACHE_NAME_CART + username;
+
         return redisTemplate.opsForList().range(CURRENT_CACHE_NAME_CART, 0, -1)
                 .collectList()
                 .filter(list -> !list.isEmpty())
                 .flatMapMany(Flux::fromIterable)
-                .switchIfEmpty(Flux.defer(()->databaseClient.sql(String.format("""
+                .switchIfEmpty(Flux.defer(() ->
+                        databaseClient.sql("""
                     SELECT
-                    	p.id,
+                        p.id,
                         p.title,
                         p.description,
                         p.img_path,
                         p.price,
-                    	coalesce(cp.count ,0) as count
-                    from products p
-                    left join cart_product cp on p.id  = cp.product_id and cp.username  = :username
-                    where cp.count > 0
-                    """)).bind("username", username)
-                                .fetch().all().map(this::mapToProduct)
-                        .collectList()
-                        .flatMapMany(products ->
-                                redisTemplate.opsForList()
-                                        .leftPushAll(CURRENT_CACHE_NAME_CART, products)
-                                        .then(redisTemplate.expire(CURRENT_CACHE_NAME_CART, CACHE_TTL))
-                                        .thenMany(Flux.fromIterable(products)))));
+                        COALESCE(cp.count, 0) as count
+                    FROM products p
+                    LEFT JOIN cart_product cp ON p.id = cp.product_id AND cp.username = :username
+                    WHERE COALESCE(cp.count, 0) > 0
+                    """)
+                                .bind("username", username)
+                                .fetch()
+                                .all()
+                                .map(this::mapToProduct)
+                                .collectList()
+                                .flatMapMany(products -> {
+                                    // ✅ Проверка: сохраняем в Redis только если список не пустой
+                                    if (products == null || products.isEmpty()) {
+                                        // Если корзина пуста, удаляем ключ из Redis если он существует
+                                        return redisTemplate.delete(CURRENT_CACHE_NAME_CART)
+                                                .thenMany(Flux.empty());
+                                    }
+
+                                    // Сохраняем в Redis
+                                    return redisTemplate.opsForList()
+                                            .leftPushAll(CURRENT_CACHE_NAME_CART, products.toArray(new ProductEntity[0]))
+                                            .then(redisTemplate.expire(CURRENT_CACHE_NAME_CART, CACHE_TTL))
+                                            .thenMany(Flux.fromIterable(products));
+                                })
+                ));
     }
 
     public Mono<Page<ProductEntity>> findAll(int pageNumber, int pageSize, String sort, String search, String username){
@@ -195,7 +209,7 @@ public class ProductService {
                                 } else if ("MINUS".equals(action)) {
                                     operation = cartProductRepository.decrementCount(id, username);
                                 } else if ("DELETE".equals(action)) {
-                                    operation = cartProductRepository.deleteAllFromCart(username);
+                                    operation = cartProductRepository.deleteProductFromCart(id, username);
                                 } else {
                                     operation = Mono.empty();
                                 }

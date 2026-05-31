@@ -7,6 +7,11 @@ import ru.yandex.practicum.mymarket.entity.ProductEntity;
 
 public class ProductUtils {
     public static Long getProductsTotal(List<ProductEntity> products){
+
+        if (products == null || products.isEmpty()) {
+            return 0L;
+        }
+
         return products.stream()
          .map(ProductEntity::getPrice)
          .reduce(0L, Long::sum);

@@ -18,7 +18,7 @@
                     </h2>
                     <a href="/orders" class="btn btn-secondary ms-auto bi bi-file-earmark-text"> Заказы</a>
                     <a href="/items" class="btn btn-secondary bi bi-arrow-left-square"> Главная</a>
-                    <button class="btn btn-secondary">
+                    <button class="btn btn-secondary" th:if="${canPay}">
                         <span>Баланс: <span th:text="${balance}">0</span></span>
                     </button>
                 </div>
@@ -53,7 +53,11 @@
                     <div class="hstack gap-3">
                         <h2 th:text="'Итого: '+${total}+' руб.'"/>
                         <button th:if="${balance > total}" class="btn btn-warning ms-auto">Купить</button>
-                        <div th:if="${balance < total}" class="alert alert-danger d-flex align-items-center gap-2 mt-3 ms-auto" role="alert">
+                        <div th:if="${!canPay}" class="alert alert-danger d-flex align-items-center gap-2 mt-3 ms-auto" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                            <span>Сервис оплаты недоступен</span>
+                        </div>
+                        <div th:if="${canPay && balance < total}" class="alert alert-danger d-flex align-items-center gap-2 mt-3 ms-auto" role="alert">
                             <i class="bi bi-exclamation-triangle-fill fs-5"></i>
                             <span>Недостаточно средств на счете. Требуется: <strong th:text="${total - balance}"></strong> ₽</span>
                         </div>

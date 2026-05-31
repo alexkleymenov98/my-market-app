@@ -32,7 +32,7 @@ public class PaymentClientService {
                 )
                 .map(BalanceResponse::getBalance)
                 .doOnNext(System.out::println)
-                .onErrorResume(e -> Mono.just(0L));
+                .onErrorResume(e -> Mono.just(-1L));
     }
 
     public Mono<Boolean> pay(PaymentRequest request){

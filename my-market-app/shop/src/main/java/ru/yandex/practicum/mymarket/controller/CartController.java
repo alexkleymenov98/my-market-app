@@ -44,10 +44,13 @@ public class CartController {
                                                 List<ProductEntity> productsList = tuple.getT1();
                                                 Long balanceValue = tuple.getT2();
 
+                                                boolean canPay = balanceValue != null && balanceValue > -1L;
+
                                                 return Rendering.view("cart")
                                                         .modelAttribute("items", productsList)
                                                         .modelAttribute("total", total)
                                                         .modelAttribute("balance", balanceValue)
+                                                        .modelAttribute("canPay", canPay)
                                                         .build();
                                             });
                                 })
@@ -67,7 +70,7 @@ public class CartController {
                 return SecurityUtils.getCurrentUsername()
                         .defaultIfEmpty("anonymous")
                         .flatMap(username->productService.updateProductInCart(id, action)
-                                .then(productService.getProductFromCart("user").collectList()));
+                                .then(productService.getProductFromCart(username).collectList()));
             })
             .flatMap(products -> {
                 Long total = ProductUtils.getProductsTotal(products);

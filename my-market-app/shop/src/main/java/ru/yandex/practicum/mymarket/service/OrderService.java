@@ -42,7 +42,7 @@ public class OrderService {
     public Mono<Long> create() {
 
     return SecurityUtils.getCurrentUsername()
-            .defaultIfEmpty("anonimous")
+            .defaultIfEmpty("anonymous")
             .flatMap(username->{
                 OrderEntity order = new OrderEntity();
                 order.setUsername(username);
@@ -55,7 +55,6 @@ public class OrderService {
                                     .mapToLong(ProductEntity::getPrice)
                                     .sum();
 
-                            order.setTotalSum(totalSum);
                             order.setTotalSum(totalSum);
 
                             PaymentRequest paymentRequest = new PaymentRequest();

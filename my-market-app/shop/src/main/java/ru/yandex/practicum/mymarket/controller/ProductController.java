@@ -123,7 +123,8 @@ public class ProductController {
     ){
 
    
-        return exchange.getFormData()
+        return SecurityUtils.getCurrentUsername()
+        .flatMap(username->exchange.getFormData()
             .map(formData ->{
                 String action = formData.getFirst("action");
 
@@ -131,10 +132,10 @@ public class ProductController {
             })
             .flatMap(action ->productService
             .updateProductInCart(id, action))
-            .then(productService.findById(id, "user").map(item ->
+            .then(productService.findById(id, username).map(item ->
                 Rendering.view("item")
                 .modelAttribute("item", item)
-                .build()));
+                .build())));
     }
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Mono<Rendering> uploadProducts(ServerWebExchange exchange) {
