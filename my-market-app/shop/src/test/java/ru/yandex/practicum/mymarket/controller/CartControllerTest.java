@@ -2,25 +2,10 @@ package ru.yandex.practicum.mymarket.controller;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.oauth2.client.reactive.ReactiveOAuth2ClientAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+
 import org.springframework.context.annotation.Import;
-import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.SecurityConfig;
-import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.core.userdetails.MapReactiveUserDetailsService;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
-import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -35,8 +20,8 @@ import ru.yandex.practicum.mymarket.service.ProductService;
 
 import static org.mockito.Mockito.when;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureWebTestClient
+@WebFluxTest(controllers = CartController.class)
+@Import(SecureConfig.class)
 @ActiveProfiles("test")
 public class CartControllerTest {
     @Autowired
@@ -55,7 +40,7 @@ public class CartControllerTest {
         ProductEntity mockProduct = new ProductEntity(1L, "apple", "Новый телефон", "/assets/image.png", 19999L, 12);
 
 
-        when(paymentClientService.getBalance("user")).thenReturn(Mono.just(0L));
+        when(paymentClientService.getBalance("user")).thenReturn(Mono.just(1000L));
         when(productService.getProductFromCart("user")).thenReturn(Flux.just(mockProduct));
 
         webTestClient.get()
@@ -68,34 +53,61 @@ public class CartControllerTest {
                 .value(html -> {
                     assert html.contains("apple");
                     assert html.contains("Новый телефон");
+                    assert html.contains("Недостаточно средств на счете. Требуется:");
                 });;
     }
 
-    // Тестовая конфигурация безопасности (упрощенная, без OAuth2)
-    @Configuration
-    static class TestSecurityConfig {
+    @Test
+    @WithMockUser(username = "user", roles = "USER")
+    void getCart_returns200WithPay() {
+        ProductEntity mockProduct = new ProductEntity(1L, "apple", "Новый телефон", "/assets/image.png", 19L, 12);
 
-        @Bean
-        public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
-            return http
-                    .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                    .authorizeExchange(exchanges -> exchanges
-                            .pathMatchers("/login", "/", "/items/**").permitAll()
-                            .anyExchange().authenticated()
-                    )
-                    .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
-                    .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-                    .build();
-        }
 
-        @Bean
-        public MapReactiveUserDetailsService userDetailsService() {
-            UserDetails user = User.builder()
-                    .username("user")
-                    .password("{noop}password")
-                    .roles("USER")
-                    .build();
-            return new MapReactiveUserDetailsService(user);
-        }
+        when(paymentClientService.getBalance("user")).thenReturn(Mono.just(1000L));
+        when(productService.getProductFromCart("user")).thenReturn(Flux.just(mockProduct));
+
+        webTestClient.get()
+                .uri("/cart/items")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class)
+                .value(html -> {
+                    assert html.contains("apple");
+                    assert html.contains("Новый телефон");
+                    assert html.contains("Купить");
+                });;
     }
+
+    @Test
+    @WithMockUser(username = "user", roles = "USER")
+    void getCart_returns200WithoutPayment() {
+        ProductEntity mockProduct = new ProductEntity(1L, "apple", "Новый телефон", "/assets/image.png", 19999L, 12);
+
+
+        when(paymentClientService.getBalance("user")).thenReturn(Mono.just(-1L));
+        when(productService.getProductFromCart("user")).thenReturn(Flux.just(mockProduct));
+
+        webTestClient.get()
+                .uri("/cart/items")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class)
+                .value(html -> {
+                    assert html.contains("Сервис оплаты недоступен");
+                    assert html.contains("Новый телефон");
+                });;
+    }
+
+    @Test
+    void shouldReturn401_WhenNoTokenProvided_GetCart() {
+        webTestClient.get().uri("/cart/items")
+                .exchange()
+                .expectStatus().isFound()  // 302 Found
+                .expectHeader().valueMatches("Location", ".*/login.*");
+    }
+
 }

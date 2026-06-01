@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import ru.yandex.practicum.mymarket.entity.CartProductEntity;
 import ru.yandex.practicum.mymarket.entity.ProductEntity;
 import ru.yandex.practicum.mymarket.repository.CartProductRepository;
 import ru.yandex.practicum.mymarket.repository.ProductRepository;
