@@ -91,39 +91,43 @@ public class OrderService {
     }
 
     public Flux<OrderEntity> findAll(){
-        return orderRepository.findAll();
+        return SecurityUtils.getCurrentUsername()
+                .defaultIfEmpty("anonymous")
+                .flatMapMany(orderRepository::findOrders);
     }
 
     public Mono<OrderEntity> findById(Long id){
         
-        return orderRepository.findById(id)
-            .flatMap(order -> 
-                orderProductRepository.findByOrderId(order.getId())
-                    .collectList()
-                    .flatMap(orderProducts -> {
-                        Map<Long, Integer> countMap = orderProducts.stream()
-                        .collect(Collectors.toMap(
-                            OrderProductEntity::getProductId,
-                            OrderProductEntity::getCount
-                        ));
-                    
-                    List<Long> productIds = new ArrayList<>(countMap.keySet());
-                    
-                    
-                    return productRepository.findAllById(productIds)
-                        .collectList()
-                        .map(products -> {
-                            List<ProductEntity> productsWithCount = products.stream()
-                                .map(product -> {
-                                    product.setCount(countMap.get(product.getId()));
-                                    return product;
+        return SecurityUtils.getCurrentUsername()
+                .defaultIfEmpty("anonymous")
+                .flatMap(username->orderRepository.findOrderByIdAndUsername(id, username)
+                .flatMap(order ->
+                        orderProductRepository.findByOrderId(order.getId())
+                                .collectList()
+                                .flatMap(orderProducts -> {
+                                    Map<Long, Integer> countMap = orderProducts.stream()
+                                            .collect(Collectors.toMap(
+                                                    OrderProductEntity::getProductId,
+                                                    OrderProductEntity::getCount
+                                            ));
+
+                                    List<Long> productIds = new ArrayList<>(countMap.keySet());
+
+
+                                    return productRepository.findAllById(productIds)
+                                            .collectList()
+                                            .map(products -> {
+                                                List<ProductEntity> productsWithCount = products.stream()
+                                                        .map(product -> {
+                                                            product.setCount(countMap.get(product.getId()));
+                                                            return product;
+                                                        })
+                                                        .collect(Collectors.toList());
+
+                                                order.setItems(productsWithCount);
+                                                return order;
+                                            });
                                 })
-                                .collect(Collectors.toList());
-                            
-                            order.setItems(productsWithCount);
-                            return order;
-                        });
-                })
-        );
-}
+                ));
+    }
 }
