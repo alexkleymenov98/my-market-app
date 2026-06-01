@@ -12,7 +12,6 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:9000/realms/market
-          jwk-set-uri: http://localhost:9000/oauth2/jwks
 server: 
   port: 8081
 
