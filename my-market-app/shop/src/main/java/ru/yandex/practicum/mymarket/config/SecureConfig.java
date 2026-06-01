@@ -29,7 +29,7 @@ public class SecureConfig {
 
         // Явно создаем репозиторий для хранения SecurityContext в WebSession
         return http
-                .csrf(csrf -> csrf.disable())
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .securityContextRepository(new WebSessionServerSecurityContextRepository())
                 // ВАЖНО: порядок имеет значение! Сначала более конкретные пути
                 .authorizeExchange(exchanges -> exchanges

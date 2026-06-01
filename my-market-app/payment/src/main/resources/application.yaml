@@ -5,6 +5,12 @@ spring:
     url: r2dbc:postgresql://db:5432/market
     username: postgres
     password: postgres
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9000/realms/market
+          jwk-set-uri: http://localhost:9000/oauth2/jwks
 server: 
   port: 8081
 
