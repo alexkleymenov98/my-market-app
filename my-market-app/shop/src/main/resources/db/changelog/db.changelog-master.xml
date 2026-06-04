@@ -6,5 +6,5 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
 
     <include file="v1/v1-1.0.0_create_shop_table.sql" relativeToChangelogFile="true"/>
-    
+    <include file="v2/v2-1.0.0_create_cart_table.sql" relativeToChangelogFile="true"/>
 </databaseChangeLog>

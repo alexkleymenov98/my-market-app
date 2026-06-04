@@ -1,0 +1,9 @@
+# JWT настройки для тестов
+spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://localhost:8080/oauth2/jwks
+spring.security.oauth2.resourceserver.jwt.issuer-uri=http://localhost:8080
+  
+  # Или используйте симметричный ключ
+spring.security.oauth2.resourceserver.jwt.secret-key=test-secret-key-for-jwt-signing-1234567890
+  
+  # Разрешаем переопределение бинов
+spring.main.allow-bean-definition-overriding=true

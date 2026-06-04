@@ -25,14 +25,19 @@
                     </h2>
 
 <!-- Замените на это: -->
-<form action="/upload" method="post" enctype="multipart/form-data" class="d-inline">
+<form action="/upload" method="post" enctype="multipart/form-data" class="d-inline" th:if="${username != 'anonymous'}">
     <input type="file" name="file" accept=".xlsx" id="file" style="display: none;" onchange="this.form.submit()">
     <label for="file" class="btn btn-secondary ms-auto bi bi-file-earmark-text">
         Загрузить xlsx
     </label>
 </form>
-                    <a href="/orders" class="btn btn-secondary ms-auto bi bi-file-earmark-text"> Заказы</a>
-                    <a href="/cart/items" class="btn btn-secondary bi bi-cart4"> Корзина</a>
+                    <a href="/orders" class="btn btn-secondary ms-auto bi bi-file-earmark-text" th:if="${username != 'anonymous'}"> Заказы</a>
+                    <a href="/cart/items" class="btn btn-secondary bi bi-cart4" th:if="${username != 'anonymous'}"> Корзина</a>
+                    <a href="/login" class="btn btn-secondary bi bi-arrow-left-square" th:if="${username == 'anonymous'}"> Войти</a>
+                    <form th:action="@{/logout}" th:if="${username != 'anonymous'}" method="post">
+                        <span class="btn btn-secondary" th:if="${username != 'anonymous'}" th:text="${username}">
+                        </span><button type="submit">Выйти</button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -75,7 +80,7 @@
                             <span class="badge text-bg-success justify-content-end" th:text="${item.getPrice()}+' руб.'"></span>
                         </h5>
                         <p class="card-text" th:text="${item.getDescription()}"></p>
-                        <form method="post" th:action="@{/items}">
+                        <form method="post" th:action="@{/items}" th:if="${username != 'anonymous'}">
                             <div class="hstack gap-3">
                                 <input type="hidden" name="id" th:value="${item.getId()}">
                                 <input type="hidden" name="search" th:value="${search}">

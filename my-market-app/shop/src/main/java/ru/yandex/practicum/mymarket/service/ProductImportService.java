@@ -4,9 +4,11 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.yandex.practicum.mymarket.entity.ProductEntity;
 import ru.yandex.practicum.mymarket.repository.ProductRepository;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -26,41 +28,50 @@ public class ProductImportService {
     public ProductImportService(ProductRepository productRepository) {
         this.productRepository = productRepository;
     }
-    
+
+
     public Mono<Void> uploadProductsFromXlsx(FilePart filePart) {
         Path tempFile = Paths.get(System.getProperty("java.io.tmpdir"), filePart.filename());
-        
+
         return filePart.transferTo(tempFile)
-            .then(Mono.fromCallable(() -> parseExcelFile(tempFile.toFile())))
-            .flatMap(products -> productRepository.saveAll(products).then())
-            .doFinally(signalType -> {
-                try {
-                    Files.deleteIfExists(tempFile);
-                } catch (IOException e) {
-                    // ignore
-                }
-            });
+                .then(parseExcelFile(tempFile.toFile())) // теперь возвращает Mono<List<ProductEntity>>
+                .flatMapMany(Flux::fromIterable) // ✅ преобразуем List в Flux
+                .collectList() // собираем обратно в List для saveAll
+                .flatMap(products -> productRepository.saveAll(products).then()) // ✅ сохраняем
+                .doFinally(signalType -> {
+                    try {
+                        Files.deleteIfExists(tempFile);
+                    } catch (IOException e) {
+                        // ignore
+                    }
+                });
     }
-    
-    private List<ProductEntity> parseExcelFile(File file) throws IOException {
+
+    public Mono<List<ProductEntity>> parseExcelFile(File file) {
+        return Mono.fromCallable(() -> parseExcelFileBlocking(file))
+                .subscribeOn(Schedulers.boundedElastic()); // отправляем в пул для блокирующих операций
+    }
+
+    // Блокирующая часть вынесена в отдельный метод
+    private List<ProductEntity> parseExcelFileBlocking(File file) throws IOException {
         List<ProductEntity> products = new ArrayList<>();
-        
+
         try (InputStream inputStream = new FileInputStream(file);
              Workbook workbook = new XSSFWorkbook(inputStream)) {
-            
+
             Sheet sheet = workbook.getSheetAt(0);
-            
+
             for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
                 if (row == null) continue;
-                
+
                 ProductEntity product = parseRowToProduct(row);
                 if (product != null) {
                     products.add(product);
                 }
             }
         }
-        
+
         return products;
     }
     

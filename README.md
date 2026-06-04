@@ -22,7 +22,7 @@ cd infra
 # Модуль витрины
 mvn clean package -DskipTests
 
-docker compose up -d db redis
+docker compose up -d db redis keycloak
 
 cd ../my-marker-app/shop
 
@@ -43,3 +43,8 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
 # Запустить тесты
 mvn test
+
+
+### Описание 
+
+в кейлоке нкообходимо завести пользователя под каким нужно будет авторизоваться 

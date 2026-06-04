@@ -7,12 +7,18 @@ servers:
   - url: http://localhost:8081
 
 paths:
-  /private/balance:
+  /private/balance/{username}:
     get:
       summary: Получить баланс пользователя
       operationId: getBalance
       tags:
         - payment
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Баланс получен
@@ -68,8 +74,12 @@ components:
     PaymentRequest:
       type: object
       required:
+        - username
         - amount
       properties:
+        username:
+          type: string
+          description: username пользователя
         amount:
           type: integer
           format: int64
